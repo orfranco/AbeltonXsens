@@ -5,8 +5,8 @@ AbeltonXsens - this Repository is used to track 'DataAnalyzer' and 'Plugin' Modu
 1. open a new VisualStudio C++ project.
 2. open terminal in VisualStudio.
 3. write in terminal step by step:
-git clone https://github.com/Microsoft/vcpkg.git
-cd vcpkg
+  - git clone https://github.com/Microsoft/vcpkg.git
+  - cd vcpkg
 ./bootstrap-vcpkg.sh
 ./vcpkg integrate install
 vcpkg install socket-io-client
