@@ -3,7 +3,10 @@
 using namespace sio;
 
 void OnMessage(event& ev) {
-	std::cout << ev.get_message()->get_string() << std::endl;
+	std::string msg = ev.get_message()->get_string();
+	int buffer = 8;
+	double euler_x = std::stod(msg.substr(msg.find("euler_x") + 8, buffer));
+	std::cout << "euler x: " << euler_x << std::endl;
 }
 
 int main() {
