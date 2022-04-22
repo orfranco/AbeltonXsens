@@ -10,4 +10,4 @@ AbeltonXsens - this Repository is used to track 'DataAnalyzer' and 'Plugin' Modu
     - ./bootstrap-vcpkg.sh
     - ./vcpkg integrate install
     - vcpkg install socket-io-client
-4. add C++Client.cpp file to Source Files Directory in your project.
+4. replace Source Folders
