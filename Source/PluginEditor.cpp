@@ -8,6 +8,8 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <sstream>
+#include <iostream>
 //TODO: Move Socket to the pluginProcessor class. or to a new class.
 
 /**
@@ -15,16 +17,38 @@
     connected to the XsensModule.
 */
 void AbletonXsensAudioProcessorEditor::onDataTransfer(std::string msg) {
-    //TODO: add a data analyzer object that will do all the data handling.
     int buffer = 8;
-    std::string param_name = "euler_x";
-    double param_value = std::stod(msg.substr(msg.find(param_name) + 8, buffer));
-    param_value = ((param_value + 180) * -100) / 360;
-    juce::String message;
-    message << param_name << ": " << param_value << "\n";
-    juce::Logger::getCurrentLogger()->writeToLog(message);
-    //audioProcessor.treeState.getParameter(param_name)->setValue(param_value);
-    gainSlider.setValue(param_value);
+    std::istringstream stream(msg);
+    std::string currentLine;
+    juce::String logMessage;
+    // first row handling - control:
+    std::getline(stream, currentLine, '\n');
+    // other rows handling - data:
+    handleDataRows(stream, currentLine, buffer, logMessage);
+}
+
+/**
+    this method iterates on each row from the data stream, extracts param name and value 
+    and changes XsensSliders values accordingly.
+*/
+void AbletonXsensAudioProcessorEditor::handleDataRows(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage)
+{
+    while (std::getline(stream, currentLine, '\n')) {
+        std::string::size_type pos = currentLine.find(':');
+        // if found:
+        if (pos != std::string::npos)
+        {
+            std::string currParam = currentLine.substr(0, pos);
+            if (XsensSliders.find(currParam) != XsensSliders.end()) {
+                //TODO: validate that value isn't nan.
+                double paramValue = std::stod(currentLine.substr(pos + 1, buffer));
+                XsensSliders[currParam]->slider.
+                    setValue(XsensSliders[currParam]->sensitivity *XsensSliders[currParam]->invertion * paramValue);
+                logMessage << currParam << ": " << paramValue << "\n";
+                juce::Logger::getCurrentLogger()->writeToLog(logMessage);
+            }
+        }
+    }
 }
 
 void AbletonXsensAudioProcessorEditor::onReceiveMsg(event& ev) {
@@ -74,25 +98,27 @@ AbletonXsensAudioProcessorEditor::AbletonXsensAudioProcessorEditor (AbletonXsens
     m_log_file("~/log_test.txt"), m_logger(m_log_file, "Welcome to the log", 0)
 {
     juce::Logger::setCurrentLogger(&m_logger);
-    setSize(200, 400);
+    setSize(1300,100);
 
     // initialize AnalyzerSocket:
     this->socketClient = std::make_unique<client>();
     this->socketClient->connect("http://127.0.0.1:3001");
     bindSocketEvents();
     
-    //add first parameter to map:
-    std::map<std::string, float> params;
-    params["euler_x"] = 0;
-    audioProcessor.addParameters(params);
-     //initialize Slider:
-    gainSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
-    gainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
-    gainSlider.setRange(-48.0, 0.0);
-    gainSlider.setValue(-1.0);
-    gainSlider.addListener(this);
-    addAndMakeVisible(gainSlider);
-    gainSliderAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.treeState, "gain", gainSlider);
+     //initialize Sliders:
+    int i = 0;
+    for (const auto& param: audioProcessor.params) {
+        XsensSliders[param.name] = std::make_unique<XsensSlider>();
+        XsensSliders[param.name]->slider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
+        XsensSliders[param.name]->slider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 50, 25);
+        XsensSliders[param.name]->slider.setSize(80, 80);
+        XsensSliders[param.name]->slider.setCentrePosition(40+80*i, 50);
+        XsensSliders[param.name]->slider.setRange(param.minValue, param.maxValue);
+        XsensSliders[param.name]->slider.setValue((param.minValue+param.maxValue)/2);
+        addAndMakeVisible(XsensSliders[param.name]->slider);
+        gainSliderAttachments[param.name] = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.treeState,param.name, XsensSliders[param.name]->slider);
+        i++;
+    }
 }
 
 AbletonXsensAudioProcessorEditor::~AbletonXsensAudioProcessorEditor()
@@ -108,9 +134,7 @@ void AbletonXsensAudioProcessorEditor::paint (juce::Graphics& g)
 
 void AbletonXsensAudioProcessorEditor::resized()
 {
-    gainSlider.setBounds(getLocalBounds());
-}
-
-void AbletonXsensAudioProcessorEditor::sliderValueChanged(juce::Slider* slider) {
-    //audioProcessor.treeState.getParameter("euler_x")->setValue(slider->getValue());
+    for (auto& pair : XsensSliders) {
+        pair.second->slider.setBounds(getLocalBounds());
+    }
 }

@@ -13,12 +13,22 @@
 #include <C:\Users\97250\Desktop\AbeltonXsens\JUCE\Plugin\NewProject\Builds\VisualStudio2022\vcpkg\installed\x64-windows-static\include\sio_client.h>
 #include <iostream>
 using namespace sio;
+
+/**
+    XsensSlider is a struct that contains all the relevant data
+    for a slider in the plugin.
+    - sensitivity: only positive values. represents the sensitivity of the slider.
+    - invertion: 1 or -1. represents the direction of the slider.
+*/
+struct XsensSlider {
+    juce::Slider slider;
+    float sensitivity = 1;
+    int invertion = 1;
+};
 //==============================================================================
 /**
 */
-class AbletonXsensAudioProcessorEditor  : public juce::AudioProcessorEditor,
-                                          public juce::Slider::Listener
-
+class AbletonXsensAudioProcessorEditor  : public juce::AudioProcessorEditor
 {
 public:
     AbletonXsensAudioProcessorEditor (AbletonXsensAudioProcessor&);
@@ -27,17 +37,16 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
-    void sliderValueChanged(juce::Slider* slider) override;
 
 private:
-    //TODO: implement a currently-connected sensors hashmap.
     AbletonXsensAudioProcessor& audioProcessor;
     std::unique_ptr<client> socketClient;
-    juce::Slider gainSlider;
+    std::map<std::string, std::unique_ptr<XsensSlider>> XsensSliders;
     // gain slider attachment should be deleted before gainSlider and treeState!
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainSliderAttachment;
+    std::map < std::string, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> gainSliderAttachments;
     void onReceiveMsg(event& ev);
     void onDataTransfer(std::string msg);
+    void handleDataRows(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage);
     void sensorConnect(event& ev);
     void sensorDisconnect(event& ev);
     void changeSampleRate(int sampleRate);

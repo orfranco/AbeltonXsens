@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="SzbfJt" name="AbletonXsens" projectType="audioplug" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1"
-              pluginCharacteristicsValue="pluginProducesMidiOut,pluginWantsMidiIn">
+              addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1">
   <MAINGROUP id="V58x91" name="AbletonXsens">
     <GROUP id="{70AC2E9C-9B5F-CC77-0B8E-F665767F8260}" name="Source">
       <FILE id="u9NqLz" name="PluginProcessor.cpp" compile="1" resource="0"

@@ -9,7 +9,26 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-
+const struct XsensParameter AbletonXsensAudioProcessor::params[] =
+{
+        {"euler_x",-180,180},
+        {"euler_y",-180,180},
+        {"euler_z",-180,180},
+        {"acc_x",-180,180},
+        {"acc_y",-180,180},
+        {"acc_z",-180,180},
+        {"gyr_x",-2000,2000},
+        {"gyr_y",-2000,2000},
+        {"gyr_z",-2000,2000},
+        //TODO: validate min-max values:
+        {"mag_x",-10,10},
+        {"mag_y",-10,10},
+        {"mag_z",-10,100},
+        {"quaternion_w",-180,180},
+        {"quaternion_x",-180,180},
+        {"quaternion_y",-180,180},
+        {"quaternion_z",-180,180}
+};
 //==============================================================================
 AbletonXsensAudioProcessor::AbletonXsensAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -29,6 +48,7 @@ AbletonXsensAudioProcessor::AbletonXsensAudioProcessor()
 
 AbletonXsensAudioProcessor::~AbletonXsensAudioProcessor()
 {
+
 }
 
 //==============================================================================
@@ -146,30 +166,6 @@ void AbletonXsensAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // this code if your algorithm always overwrites all the output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-
-    
-    //auto sliderGainValue = treeState.getRawParameterValue(GAIN_ID);
-    //auto message = juce::MidiMessage::controllerEvent(1, 7, (int)sliderGainValue->load());
-    //message.setTimeStamp(juce::Time::getMillisecondCounterHiRes() * 0.001 - startTime);
-    //auto timestamp = message.getTimeStamp();
-    //auto sampleNumber = (int)(timestamp * 44100.0);
-    //midiMessages.addEvent(message, sampleNumber);
-
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    //for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    //{
-    //    auto* channelData = buffer.getWritePointer (channel);
-    //    auto sliderGainValue = treeState.getRawParameterValue(GAIN_ID);
-    //    // ..do something to the data...
-    //    for (int sample = 0; sample < buffer.getNumSamples(); ++sample) {
-    //        channelData[sample] = buffer.getSample(channel, sample) * juce::Decibels::decibelsToGain(sliderGainValue->load());
-    //    }
-    //}
 }
 
 //==============================================================================
@@ -206,25 +202,11 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 
 juce::AudioProcessorValueTreeState::ParameterLayout AbletonXsensAudioProcessor::createParameters()
 {
-    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
-    params.push_back(
-        std::make_unique<juce::AudioParameterFloat>("gain", "gain", -48.0f, 0.0f, -1.0f)
-    );
-    return { params.begin(), params.end() };
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> pluginParams;
+    for (auto& param : this->params) {
+        pluginParams.push_back(
+            std::make_unique<juce::AudioParameterFloat>(param.name, param.name, param.minValue, param.maxValue, (param.minValue + param.maxValue) / 2));
+    }
+    return { pluginParams.begin(), pluginParams.end() };
 }
-
-void AbletonXsensAudioProcessor::addParameters(std::map<std::string, float>& params)
-{
-    //for (auto param : params) {
-    //    treeState.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>(param.first, param.first, 0, 100, param.second));
-    //}
-    treeState.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("euler_x", "euler_x", 0, 100, params["euler_x"]));
-    
-    addParameter(new juce::AudioParameterFloat("euler_x", // parameterID
-        "euler_x", // parameter name
-        0.0f,   // minimum value
-        1.0f,   // maximum value
-        0.5f)); // default value
-}
-
 

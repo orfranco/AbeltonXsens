@@ -10,7 +10,13 @@
 
 #include <JuceHeader.h>
 #include <map>
+#define PARAMS_NUM 16
 
+const struct XsensParameter {
+    const std::string name;
+    float minValue;
+    float maxValue;
+};
 //==============================================================================
 /**
 */
@@ -55,11 +61,11 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     juce::AudioProcessorValueTreeState treeState;
-    void addParameters(std::map<std::string, float>& params);
+    static const struct XsensParameter params[PARAMS_NUM];
+
 private:
     double startTime;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
-
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AbletonXsensAudioProcessor)
 
