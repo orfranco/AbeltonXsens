@@ -8,8 +8,6 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include <sstream>
-#include <iostream>
 //TODO: Move Socket to the pluginProcessor class. or to a new class.
 
 /**
@@ -45,10 +43,10 @@ void AbletonXsensAudioProcessorEditor::handleDataRows(std::istringstream& stream
                 XsensSliders[currParam]->slider.
                     setValue(XsensSliders[currParam]->sensitivity *XsensSliders[currParam]->invertion * paramValue);
                 logMessage << currParam << ": " << paramValue << "\n";
-                juce::Logger::getCurrentLogger()->writeToLog(logMessage);
             }
         }
     }
+    juce::Logger::getCurrentLogger()->writeToLog(logMessage);
 }
 
 void AbletonXsensAudioProcessorEditor::onReceiveMsg(event& ev) {
