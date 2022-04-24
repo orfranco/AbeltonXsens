@@ -28,7 +28,10 @@ struct XsensSlider {
 //==============================================================================
 /**
 */
-class AbletonXsensAudioProcessorEditor  : public juce::AudioProcessorEditor
+class AbletonXsensAudioProcessorEditor  : public juce::AudioProcessorEditor,
+                                          public juce::Slider::Listener,
+                                          public juce::Button::Listener
+
 {
 public:
     AbletonXsensAudioProcessorEditor (AbletonXsensAudioProcessor&);
@@ -37,13 +40,21 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
+    void sliderValueChanged(juce::Slider* slider) override;
+    void buttonClicked(juce::Button* button) override;
+    
 
 private:
     AbletonXsensAudioProcessor& audioProcessor;
     std::unique_ptr<client> socketClient;
     std::map<std::string, std::unique_ptr<XsensSlider>> XsensSliders;
-    // gain slider attachment should be deleted before gainSlider and treeState!
+    // notice: slider attachments should be deleted before XsensSliders and treeState!
     std::map < std::string, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> gainSliderAttachments;
+    std::map < std::string, std::unique_ptr<juce::Label>> sliderLabels;
+    juce::Slider sensitivitySlider;
+    juce::Label sensitivityLabel;
+    juce::ToggleButton invertButton;
+    juce::Label invertLabel;
     void onReceiveMsg(event& ev);
     void onDataTransfer(std::string msg);
     void handleDataRows(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage);

@@ -38,11 +38,17 @@ void AbletonXsensAudioProcessorEditor::handleDataRows(std::istringstream& stream
         {
             std::string currParam = currentLine.substr(0, pos);
             if (XsensSliders.find(currParam) != XsensSliders.end()) {
-                //TODO: validate that value isn't nan.
-                double paramValue = std::stod(currentLine.substr(pos + 1, buffer));
-                XsensSliders[currParam]->slider.
-                    setValue(XsensSliders[currParam]->sensitivity *XsensSliders[currParam]->invertion * paramValue);
-                logMessage << currParam << ": " << paramValue << "\n";
+                //validate that value isn't NaN. TODO: check if it works.
+                if (currentLine.find("NaN", pos) == std::string::npos) {
+                    double paramValue = std::stod(currentLine.substr(pos + 1, buffer));
+
+                    XsensSliders[currParam]->slider.
+                        setValue(XsensSliders[currParam]->sensitivity * XsensSliders[currParam]->invertion * paramValue);
+                    logMessage << currParam << ": " << paramValue << "\n";
+                }
+                else {
+                    logMessage << currParam << ": nan \n";
+                }
             }
         }
     }
@@ -96,27 +102,54 @@ AbletonXsensAudioProcessorEditor::AbletonXsensAudioProcessorEditor (AbletonXsens
     m_log_file("~/log_test.txt"), m_logger(m_log_file, "Welcome to the log", 0)
 {
     juce::Logger::setCurrentLogger(&m_logger);
-    setSize(1300,100);
+    setSize(1300,190);
 
     // initialize AnalyzerSocket:
     this->socketClient = std::make_unique<client>();
     this->socketClient->connect("http://127.0.0.1:3001");
     bindSocketEvents();
     
-     //initialize Sliders:
+     //initialize sensor values Sliders and labels:
     int i = 0;
     for (const auto& param: audioProcessor.params) {
         XsensSliders[param.name] = std::make_unique<XsensSlider>();
         XsensSliders[param.name]->slider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
         XsensSliders[param.name]->slider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 50, 25);
         XsensSliders[param.name]->slider.setSize(80, 80);
-        XsensSliders[param.name]->slider.setCentrePosition(40+80*i, 50);
+        XsensSliders[param.name]->slider.setCentrePosition(40+80*i, 60);
         XsensSliders[param.name]->slider.setRange(param.minValue, param.maxValue);
         XsensSliders[param.name]->slider.setValue((param.minValue+param.maxValue)/2);
         addAndMakeVisible(XsensSliders[param.name]->slider);
         gainSliderAttachments[param.name] = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.treeState,param.name, XsensSliders[param.name]->slider);
+        sliderLabels[param.name] = std::make_unique<juce::Label>();
+        sliderLabels[param.name]->setText(param.name, juce::dontSendNotification);
+        sliderLabels[param.name]->attachToComponent(&XsensSliders[param.name]->slider, false);
+        addAndMakeVisible(*sliderLabels[param.name]);
         i++;
     }
+
+    // initialize sensitivity slider:
+    sensitivitySlider.setSliderStyle(juce::Slider::SliderStyle::LinearHorizontal);
+    sensitivitySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 50, 25);
+    sensitivitySlider.setSize(100, 50);
+    sensitivitySlider.setCentrePosition(130, 130);
+    sensitivitySlider.setRange(0, 5);
+    sensitivitySlider.setValue(1);
+    sensitivitySlider.addListener(this);
+    addAndMakeVisible(sensitivitySlider);
+    sensitivityLabel.setText("Sensitivity:", juce::dontSendNotification);
+    sensitivityLabel.attachToComponent(&sensitivitySlider, true);
+    addAndMakeVisible(sensitivityLabel);
+
+    //initialize invert button:
+    invertButton.setSize(50, 50);
+    invertButton.setCentrePosition(260, 130);
+    invertButton.addListener(this);
+    addAndMakeVisible(invertButton);
+    invertLabel.setText("invert:", juce::dontSendNotification);
+    invertLabel.attachToComponent(&invertButton, true);
+    addAndMakeVisible(invertLabel);
+
 }
 
 AbletonXsensAudioProcessorEditor::~AbletonXsensAudioProcessorEditor()
@@ -134,5 +167,22 @@ void AbletonXsensAudioProcessorEditor::resized()
 {
     for (auto& pair : XsensSliders) {
         pair.second->slider.setBounds(getLocalBounds());
+    }
+}
+
+void  AbletonXsensAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
+{
+    if (slider == &sensitivitySlider) {
+        for (auto& xsensSlider : XsensSliders) {
+            xsensSlider.second->sensitivity = slider->getValue();
+        }
+    }
+}
+
+void AbletonXsensAudioProcessorEditor::buttonClicked(juce::Button* button) {
+    if (button == &invertButton) {
+        for (auto& xsensSlider : XsensSliders) {
+            xsensSlider.second->invertion*=-1;
+        }
     }
 }
