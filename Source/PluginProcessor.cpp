@@ -30,6 +30,105 @@ const struct XsensParameter AbletonXsensAudioProcessor::params[] =
         {"quaternion_z",-180,180}
 };
 //==============================================================================
+
+/**
+    Binded to 'recieve-data' Socket event. this method handles data transfer from sensors
+    connected to the XsensModule.
+*/
+void AbletonXsensAudioProcessor::onDataTransfer(std::string msg) {
+    int buffer = 8;
+    std::istringstream stream(msg);
+    std::string currentLine;
+    juce::String logMessage;
+    // first row handling - control:
+    std::getline(stream, currentLine, '\n');
+    // other rows handling - data:
+    handleDataRows(stream, currentLine, buffer, logMessage);
+}
+
+/**
+    this method iterates on each row from the data stream, extracts param name and value
+    and changes XsensSliders values accordingly.
+*/
+void AbletonXsensAudioProcessor::handleDataRows(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage)
+{
+    //TODO: refactor!!!
+    while (std::getline(stream, currentLine, '\n')) {
+        std::string::size_type pos = currentLine.find(':');
+        // if found:
+        if (pos != std::string::npos)
+        {
+            std::string currParam = currentLine.substr(0, pos);
+            if (treeState.getParameter(currParam) != nullptr) {
+                //validate that value isn't NaN. TODO: check if it works.
+                if (currentLine.find("NaN", pos) == std::string::npos) {
+                    double paramValue = std::stod(currentLine.substr(pos + 1, buffer));
+                    //XsensSliders[currParam]->slider.setValue(XsensSliders[currParam]->sensitivity * XsensSliders[currParam]->invertion * paramValue);
+                    if (treeState.getParameter(currParam + SENSITIVITY) != nullptr && treeState.getParameter(currParam + INVERTION) != nullptr) {
+                        auto paramSensitivity = treeState.getRawParameterValue(currParam + SENSITIVITY);
+                        auto paramInvertion = treeState.getParameter(currParam + INVERTION);
+                        float newValue;
+                        if ((bool)paramInvertion->getValue() == false) {
+                            newValue = paramValue * *paramSensitivity;
+                        }
+                        else {
+                            newValue = -1 * paramValue * *paramSensitivity;
+                        }
+                        treeState.getParameter(currParam)->setValueNotifyingHost(
+                            treeState.getParameterRange(currParam).convertTo0to1(newValue));
+
+                        logMessage << currParam << ": " << paramValue << "\n";
+                    }
+                }
+                else {
+                    logMessage << currParam << ": nan \n";
+                }
+            }
+        }
+    }
+    juce::Logger::getCurrentLogger()->writeToLog(logMessage);
+}
+
+void AbletonXsensAudioProcessor::onReceiveMsg(event& ev) {
+    std::string msg = ev.get_message()->get_string();
+    onDataTransfer(msg);
+}
+
+/**
+   binded to sensor-connect, this method updates this Module when a sensor connected
+   to the Xsens Module.
+   creates a sensor object and add it to the currConnectedSensors hashmap.
+*/
+void AbletonXsensAudioProcessor::sensorConnect(event& ev) {
+    //TODO:implement.
+}
+
+/**
+   binded to sensor-disconnect, this method updates this Module when a sensor disconnected
+   from the Xsens Module.
+   deletes the disconnected sensor from the currConnectedSensors hashmap.
+*/
+void AbletonXsensAudioProcessor::sensorDisconnect(event& ev) {
+    //TODO:implement.
+}
+
+/**
+   this method send message to Xsens Module for changing the sample rate.
+*/
+void AbletonXsensAudioProcessor::changeSampleRate(int sampleRate) {
+    //TODO:implement.
+}
+
+// bind Socket Events:
+void AbletonXsensAudioProcessor::bindSocketEvents() {
+    std::function<void(event& event)> const& func1 = std::bind(&AbletonXsensAudioProcessor::onReceiveMsg, this, std::placeholders::_1);
+    this->socketClient->socket()->on("recieve-data", func1);
+    std::function<void(event& event)> const& func2 = std::bind(&AbletonXsensAudioProcessor::sensorConnect, this, std::placeholders::_1);
+    this->socketClient->socket()->on("sensor-connect", func2);
+    std::function<void(event& event)> const& func3 = std::bind(&AbletonXsensAudioProcessor::sensorDisconnect, this, std::placeholders::_1);
+    this->socketClient->socket()->on("sensor-disconnect", func3);
+}
+
 AbletonXsensAudioProcessor::AbletonXsensAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
     : AudioProcessor(BusesProperties()
@@ -40,10 +139,19 @@ AbletonXsensAudioProcessor::AbletonXsensAudioProcessor()
         .withOutput("Output", juce::AudioChannelSet::stereo(), true)
 #endif
     ), treeState(*this, nullptr, "PARAMETER", createParameters()),
-        startTime(juce::Time::getMillisecondCounterHiRes() * 0.001)
+        startTime(juce::Time::getMillisecondCounterHiRes() * 0.001),
+        m_log_file("~/log_test.txt"), m_logger(m_log_file, "Welcome to the log", 0)
+
 #endif
     
 {
+    juce::Logger::setCurrentLogger(&m_logger);
+
+    // initialize AnalyzerSocket:
+    this->socketClient = std::make_unique<client>();
+    this->socketClient->connect("http://127.0.0.1:3001");
+    bindSocketEvents();
+
 }
 
 AbletonXsensAudioProcessor::~AbletonXsensAudioProcessor()
@@ -206,6 +314,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout AbletonXsensAudioProcessor::
     for (auto& param : this->params) {
         pluginParams.push_back(
             std::make_unique<juce::AudioParameterFloat>(param.name, param.name, param.minValue, param.maxValue, (param.minValue + param.maxValue) / 2));
+    }
+    // adding sensitivity and invert sliders:
+    for (auto& param : this->params) {
+        pluginParams.push_back(
+            std::make_unique<juce::AudioParameterFloat>(param.name+SENSITIVITY, param.name+SENSITIVITY, MIN_SENSITIVITY, MAX_SENSITIVITY, 1));
+        pluginParams.push_back(
+            std::make_unique<juce::AudioParameterBool>(param.name + INVERTION, param.name + INVERTION, false, param.name + INVERTION));
+
     }
     return { pluginParams.begin(), pluginParams.end() };
 }
