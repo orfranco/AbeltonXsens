@@ -10,10 +10,7 @@
 
 #include <JuceHeader.h>
 #include <map>
-#include <C:\Users\97250\Desktop\AbeltonXsens\JUCE\Plugin\NewProject\Builds\VisualStudio2022\vcpkg\installed\x64-windows-static\include\sio_client.h>
-#include <iostream>
-
-using namespace sio;
+#include "../Builds/VisualStudio2022/XsenSocket.h"
 
 #define PARAMS_NUM 16
 #define SENSITIVITY "_sensitivity"
@@ -21,13 +18,17 @@ using namespace sio;
 #define MAX_SENSITIVITY 10
 #define INVERTION "_invertion"
 
-
 //==============================================================================
 /**
 */
 class AbletonXsensAudioProcessor  : public juce::AudioProcessor
 {
 public:
+    juce::AudioProcessorValueTreeState treeState;
+    std::unique_ptr<XsenSocket> XsensClient;
+    static const struct XsensParameter params[PARAMS_NUM];
+
+
     //==============================================================================
     AbletonXsensAudioProcessor();
     ~AbletonXsensAudioProcessor() override;
@@ -65,29 +66,13 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    juce::AudioProcessorValueTreeState treeState;
-    static const struct XsensParameter params[PARAMS_NUM];
-
+    void onDataTransfer(std::string msg);
+    void handleDataRows(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage);
 private:
     double startTime;
-    std::unique_ptr<client> socketClient;
     juce::File m_log_file;
     juce::FileLogger m_logger;
-
-
-    void onDataTransfer(std::string msg);
-
-    void handleDataRows(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage);
-
-    void onReceiveMsg(event& ev);
-
-    void sensorConnect(event& ev);
-
-    void sensorDisconnect(event& ev);
-
-    void changeSampleRate(int sampleRate);
-
-    void bindSocketEvents();
+    
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AbletonXsensAudioProcessor)

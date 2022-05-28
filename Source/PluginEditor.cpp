@@ -13,7 +13,8 @@
 //==============================================================================
 AbletonXsensAudioProcessorEditor::AbletonXsensAudioProcessorEditor (AbletonXsensAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
-{}
+{
+}
 
 AbletonXsensAudioProcessorEditor::~AbletonXsensAudioProcessorEditor()
 {
@@ -22,7 +23,6 @@ AbletonXsensAudioProcessorEditor::~AbletonXsensAudioProcessorEditor()
 //==============================================================================
 void AbletonXsensAudioProcessorEditor::paint (juce::Graphics& g)
 {
-
 }
 
 void AbletonXsensAudioProcessorEditor::resized()
