@@ -14,7 +14,7 @@ const struct XsensParameter AbletonXsensAudioProcessor::params[] =
         {"euler_x",-180,180},
         {"euler_y",-180,180},
         {"euler_z",-180,180},
-        {"acc_x",-180,180},
+       /* {"acc_x",-180,180},
         {"acc_y",-180,180},
         {"acc_z",-180,180},
         {"gyr_x",-2000,2000},
@@ -27,7 +27,7 @@ const struct XsensParameter AbletonXsensAudioProcessor::params[] =
         {"quaternion_w",-180,180},
         {"quaternion_x",-180,180},
         {"quaternion_y",-180,180},
-        {"quaternion_z",-180,180}
+        {"quaternion_z",-180,180} */
 };
 //==============================================================================
 
@@ -42,7 +42,8 @@ AbletonXsensAudioProcessor::AbletonXsensAudioProcessor()
 #endif
     ), treeState(*this, nullptr, "PARAMETER", createParameters()),
         startTime(juce::Time::getMillisecondCounterHiRes() * 0.001),
-        m_log_file("~/log_test.txt"), m_logger(m_log_file, "Welcome to the log", 0)
+        m_log_file("~/log_test.txt"), m_logger(m_log_file, "Welcome to the log", 0),
+        streamAlloctor(MAX_SENSORS_NUM)
 
 #endif
     
@@ -57,6 +58,28 @@ AbletonXsensAudioProcessor::~AbletonXsensAudioProcessor()
 
 }
 
+juce::AudioProcessorValueTreeState::ParameterLayout AbletonXsensAudioProcessor::createParameters()
+{
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> pluginParams;
+    for (int sensorIdx = 0; sensorIdx < MAX_SENSORS_NUM; sensorIdx++) {
+        for (auto& param : this->params) {
+            auto name = param.name + "_" + std::to_string(sensorIdx);
+            pluginParams.push_back(
+                std::make_unique<juce::AudioParameterFloat>(name, name, param.minValue, param.maxValue, (param.minValue + param.maxValue) / 2));
+            
+            auto currSensitivityName = param.name + "_" + std::to_string(sensorIdx) + SENSITIVITY;
+            pluginParams.push_back(
+                std::make_unique<juce::AudioParameterFloat>(currSensitivityName, currSensitivityName, MIN_SENSITIVITY, MAX_SENSITIVITY, 1));
+            
+            auto currInvertionName = param.name + "_" + std::to_string(sensorIdx) + INVERTION;
+            pluginParams.push_back(
+                std::make_unique<juce::AudioParameterBool>(currInvertionName, currInvertionName, false, currInvertionName));
+        }
+    }
+
+    return { pluginParams.begin(), pluginParams.end() };
+}
+
 /**
     Binded to 'recieve-data' Socket event. this method handles data transfer from sensors
     connected to the XsensModule.
@@ -68,15 +91,22 @@ void AbletonXsensAudioProcessor::onDataTransfer(std::string msg) {
     juce::String logMessage;
     // first row handling - control:
     std::getline(stream, currentLine, '\n');
+    int currSlot = extractSlot(currentLine);
     // other rows handling - data:
-    this->handleDataRows(stream, currentLine, buffer, logMessage);
+    this->handleDataRows(stream, currentLine, buffer, logMessage, currSlot);
+}
+
+int AbletonXsensAudioProcessor::extractSlot(std::string firstLine) {
+    std::string::size_type pos = firstLine.find(',');
+    std::string currId = firstLine.substr(pos + 1, pos + 18);
+    return streamAlloctor.AddStream(currId);
 }
 
 /**
     this method iterates on each row from the data stream, extracts param name and value
     and changes XsensSliders values accordingly.
 */
-void AbletonXsensAudioProcessor::handleDataRows(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage)
+void AbletonXsensAudioProcessor::handleDataRows(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage, int currSlot)
 {
 
     //TODO: refactor!!!
@@ -85,7 +115,7 @@ void AbletonXsensAudioProcessor::handleDataRows(std::istringstream& stream, std:
         // if found:
         if (pos != std::string::npos)
         {
-            std::string currParam = currentLine.substr(0, pos);
+            std::string currParam = currentLine.substr(0, pos)+"_"+std::to_string(currSlot);
             if (this->treeState.getParameter(currParam) != nullptr) {
                 //validate that value isn't NaN. TODO: check if it works.
                 if (currentLine.find("NaN", pos) == std::string::npos) {
@@ -265,21 +295,4 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
     return new AbletonXsensAudioProcessor();
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout AbletonXsensAudioProcessor::createParameters()
-{
-    std::vector<std::unique_ptr<juce::RangedAudioParameter>> pluginParams;
-    for (auto& param : this->params) {
-        pluginParams.push_back(
-            std::make_unique<juce::AudioParameterFloat>(param.name, param.name, param.minValue, param.maxValue, (param.minValue + param.maxValue) / 2));
-    }
-    // adding sensitivity and invert sliders:
-    for (auto& param : this->params) {
-        pluginParams.push_back(
-            std::make_unique<juce::AudioParameterFloat>(param.name+SENSITIVITY, param.name+SENSITIVITY, MIN_SENSITIVITY, MAX_SENSITIVITY, 1));
-        pluginParams.push_back(
-            std::make_unique<juce::AudioParameterBool>(param.name + INVERTION, param.name + INVERTION, false, param.name + INVERTION));
-
-    }
-    return { pluginParams.begin(), pluginParams.end() };
-}
 

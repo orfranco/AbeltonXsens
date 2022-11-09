@@ -11,12 +11,14 @@
 #include <JuceHeader.h>
 #include <map>
 #include "../Builds/VisualStudio2022/XsenSocket.h"
+#include "../Builds/VisualStudio2022/StreamAllocator.h"
 
-#define PARAMS_NUM 16
+#define PARAMS_NUM 3
 #define SENSITIVITY "_sensitivity"
 #define MIN_SENSITIVITY 0
 #define MAX_SENSITIVITY 10
 #define INVERTION "_invertion"
+#define MAX_SENSORS_NUM 5
 
 //==============================================================================
 /**
@@ -67,23 +69,21 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     void onDataTransfer(std::string msg);
-    void handleDataRows(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage);
+    int extractSlot(std::string firstLine);
+    void handleDataRows(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage, int currSlot);
 private:
     double startTime;
     juce::File m_log_file;
     juce::FileLogger m_logger;
-    
+    StreamAllocator streamAlloctor;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AbletonXsensAudioProcessor)
 
-
-
-
 };
 
 const struct XsensParameter {
-    const std::string name;
+    std::string name;
     float minValue;
     float maxValue;
 };
