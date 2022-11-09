@@ -70,7 +70,7 @@ public:
 
     void onDataTransfer(std::string msg);
     int extractSlot(std::string firstLine);
-    void handleDataRows(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage, int currSlot);
+    void extractSensorData(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage, int currSlot);
 private:
     double startTime;
     juce::File m_log_file;

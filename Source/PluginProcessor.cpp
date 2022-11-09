@@ -93,20 +93,24 @@ void AbletonXsensAudioProcessor::onDataTransfer(std::string msg) {
     std::getline(stream, currentLine, '\n');
     int currSlot = extractSlot(currentLine);
     // other rows handling - data:
-    this->handleDataRows(stream, currentLine, buffer, logMessage, currSlot);
+    this->extractSensorData(stream, currentLine, buffer, logMessage, currSlot);
 }
 
+/** 
+this method extracts the mac-address of the sensor.
+it then uses the streamAllocator to get the slot.
+*/
 int AbletonXsensAudioProcessor::extractSlot(std::string firstLine) {
     std::string::size_type pos = firstLine.find(',');
     std::string currId = firstLine.substr(pos + 1, pos + 18);
-    return streamAlloctor.AddStream(currId);
+    return streamAlloctor.IdToSlot(currId);
 }
 
 /**
     this method iterates on each row from the data stream, extracts param name and value
     and changes XsensSliders values accordingly.
 */
-void AbletonXsensAudioProcessor::handleDataRows(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage, int currSlot)
+void AbletonXsensAudioProcessor::extractSensorData(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage, int currSlot)
 {
 
     //TODO: refactor!!!

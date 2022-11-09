@@ -8,7 +8,7 @@ StreamAllocator::StreamAllocator(int streamSize) {
 	}
 }
 
-int StreamAllocator::AddStream(std::string id) {
+int StreamAllocator::IdToSlot(std::string id) {
 	/* returns the slot that the stream was allocated to.
 		if all slots allocated, returns -1.
 	*/
@@ -33,9 +33,9 @@ int StreamAllocator::AddStream(std::string id) {
 	return minFreeSlot;
 }
 
-int StreamAllocator::GetStreamSlot(std::string id) {
-	if (streamMap.find(id) == streamMap.end()) {
-		return -1;
-	}
-	return streamMap[id];
-}
+//int StreamAllocator::GetStreamSlot(std::string id) {
+//	if (streamMap.find(id) == streamMap.end()) {
+//		return -1;
+//	}
+//	return streamMap[id];
+//}
