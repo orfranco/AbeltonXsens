@@ -9,8 +9,6 @@ this class is responsible on the data stream.
 Each id (mac address of the sensor), receives a slot (int index from 0 to streamSize).
 the allocation works like this:
 if a new mac address is recieved, it gets the min of all unallocated slots.
-
-
 */
 
 class StreamAllocator

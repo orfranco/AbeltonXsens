@@ -43,7 +43,7 @@ AbletonXsensAudioProcessor::AbletonXsensAudioProcessor()
     ), treeState(*this, nullptr, "PARAMETER", createParameters()),
         startTime(juce::Time::getMillisecondCounterHiRes() * 0.001),
         m_log_file("~/log_test.txt"), m_logger(m_log_file, "Welcome to the log", 0),
-        streamAlloctor(MAX_SENSORS_NUM)
+        streamAllocator(MAX_SENSORS_NUM)
 
 #endif
     
@@ -103,7 +103,7 @@ it then uses the streamAllocator to get the slot.
 int AbletonXsensAudioProcessor::extractSlot(std::string firstLine) {
     std::string::size_type pos = firstLine.find(',');
     std::string currId = firstLine.substr(pos + 1, pos + 18);
-    return streamAlloctor.IdToSlot(currId);
+    return streamAllocator.IdToSlot(currId);
 }
 
 /**

@@ -75,7 +75,7 @@ private:
     double startTime;
     juce::File m_log_file;
     juce::FileLogger m_logger;
-    StreamAllocator streamAlloctor;
+    StreamAllocator streamAllocator;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AbletonXsensAudioProcessor)
