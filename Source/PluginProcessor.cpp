@@ -41,14 +41,11 @@ AbletonXsensAudioProcessor::AbletonXsensAudioProcessor()
         .withOutput("Output", juce::AudioChannelSet::stereo(), true)
 #endif
     ), treeState(*this, nullptr, "PARAMETER", createParameters()),
-    startTime(juce::Time::getMillisecondCounterHiRes() * 0.001),
-    m_log_file("~/log_test.txt"), m_logger(m_log_file, "Welcome to the log", 0),
     streamAllocator(MAX_SENSORS_NUM)
 
 #endif
 
 {
-    juce::Logger::setCurrentLogger(&m_logger);
     std::function<void(std::string)> const& handler = std::bind(&AbletonXsensAudioProcessor::onDataTransfer, this, std::placeholders::_1);
     this->XsensClient = std::make_unique<XsenSocket>(handler);
 }
@@ -93,12 +90,11 @@ void AbletonXsensAudioProcessor::onDataTransfer(std::string msg) {
     int buffer = 8;
     std::istringstream stream(msg);
     std::string currentLine;
-    juce::String logMessage;
     // first row handling - control:
     std::getline(stream, currentLine, '\n');
     int currSlot = extractSlot(currentLine);
     // other rows handling - data:
-    this->extractSensorData(stream, currentLine, buffer, logMessage, currSlot);
+    this->extractSensorData(stream, currentLine, buffer, currSlot);
 }
 
 /**
@@ -115,34 +111,22 @@ int AbletonXsensAudioProcessor::extractSlot(std::string firstLine) {
     this method iterates on each row from the data stream, extracts param name and value
     and changes XsensSliders values accordingly.
 */
-void AbletonXsensAudioProcessor::extractSensorData(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage, int currSlot)
+void AbletonXsensAudioProcessor::extractSensorData(std::istringstream& stream, std::string& currentLine, int buffer, int currSlot)
 {
-
-    //TODO: refactor!!!
     while (std::getline(stream, currentLine, '\n')) {
         std::string::size_type pos = currentLine.find(':');
-        // if found:
-        if (pos != std::string::npos)
+        if (pos == std::string::npos) // if found:
         {
-            std::string currParam = currentLine.substr(0, pos) + "_" + std::to_string(currSlot);
-            if (this->treeState.getParameter(currParam) != nullptr) {
-                //validate that value isn't NaN. TODO: check if it works.
-                if (currentLine.find("NaN", pos) == std::string::npos) {
-                    double paramValue = std::stod(currentLine.substr(pos + 1, buffer));
-                    if (this->treeState.getParameter(currParam + SENSITIVITY) != nullptr && this->treeState.getParameter(currParam + INVERTION) != nullptr) {
-                        float newValue = mapSensorValues(currParam, paramValue);
-                        this->treeState.getParameter(currParam)->setValueNotifyingHost(
-                            this->treeState.getParameterRange(currParam).convertTo0to1(newValue));
-                        logMessage << currParam << ": " << paramValue << "\n";
-                    }
-                }
-                else {
-                    logMessage << currParam << ": nan \n";
-                }
-            }
+            continue;
+        }
+        std::string currParam = currentLine.substr(0, pos) + "_" + std::to_string(currSlot);
+        if ((this->treeState.getParameter(currParam) != nullptr) && (currentLine.find("NaN", pos) == std::string::npos)){
+            double paramValue = std::stod(currentLine.substr(pos + 1, buffer));
+            float newValue = mapSensorValues(currParam, paramValue);
+            this->treeState.getParameter(currParam)->setValueNotifyingHost(
+                this->treeState.getParameterRange(currParam).convertTo0to1(newValue));
         }
     }
-    juce::Logger::getCurrentLogger()->writeToLog(logMessage);
 }
 
 /**

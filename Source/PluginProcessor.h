@@ -2,7 +2,7 @@
   ==============================================================================
 
     This file contains the basic framework code for a JUCE plugin processor.
-
+    
   ==============================================================================
 */
 
@@ -73,11 +73,9 @@ public:
 
     void onDataTransfer(std::string msg);
     int extractSlot(std::string firstLine);
-    void extractSensorData(std::istringstream& stream, std::string& currentLine, int buffer, juce::String& logMessage, int currSlot);
+    void extractSensorData(std::istringstream& stream, std::string& currentLine, int buffer, int currSlot);
+
 private:
-    double startTime;
-    juce::File m_log_file;
-    juce::FileLogger m_logger;
     StreamAllocator streamAllocator;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
     float AbletonXsensAudioProcessor::mapSensorValues(std::string currParam, double paramValue);
