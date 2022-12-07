@@ -4,6 +4,12 @@
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1">
   <MAINGROUP id="V58x91" name="AbletonXsens">
     <GROUP id="{70AC2E9C-9B5F-CC77-0B8E-F665767F8260}" name="Source">
+      <FILE id="NpfYz0" name="StreamAllocator.cpp" compile="1" resource="0"
+            file="Builds/VisualStudio2022/StreamAllocator.cpp"/>
+      <FILE id="dF0Y37" name="StreamAllocator.h" compile="0" resource="0"
+            file="Builds/VisualStudio2022/StreamAllocator.h"/>
+      <FILE id="KNa1VG" name="XsenSocket.cpp" compile="1" resource="0" file="Builds/VisualStudio2022/XsenSocket.cpp"/>
+      <FILE id="loDfLn" name="XsenSocket.h" compile="0" resource="0" file="Builds/VisualStudio2022/XsenSocket.h"/>
       <FILE id="u9NqLz" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="xgA7jx" name="PluginProcessor.h" compile="0" resource="0"
@@ -17,7 +23,8 @@
   <EXPORTFORMATS>
     <VS2022 targetFolder="Builds/VisualStudio2022" externalLibraries="&quot;C:\Users\97250\Desktop\AbeltonXsens\JUCE\Plugin\NewProject\Builds\VisualStudio2022\vcpkg\installed\x64-windows-static\lib\sioclient.lib&quot; &#10;&quot;C:\Users\97250\Desktop\AbeltonXsens\JUCE\Plugin\NewProject\Builds\VisualStudio2022\vcpkg\installed\x64-windows-static\lib\sioclient_tls.lib&quot;&#10;">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="AbletonXsens" useRuntimeLibDLL="0"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="AbletonXsens" useRuntimeLibDLL="0"
+                       linkTimeOptimisation="1" optimisation="3"/>
         <CONFIGURATION isDebug="0" name="Release" targetName="AbletonXsens" useRuntimeLibDLL="0"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
